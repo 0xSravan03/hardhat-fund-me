@@ -21,5 +21,10 @@
         "solhint": "^3.3.8",
         "solidity-coverage": "^0.8.0",
         "typechain": "^8.1.0"
-    }
+    },
+    "scripts": {
+        "deploy": "hardhat deploy",
+        "test": "hardhat test",
+        "coverage": "hardhat coverage"
+      }
 }
