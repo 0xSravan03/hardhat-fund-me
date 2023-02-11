@@ -1,6 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox")
 require("hardhat-deploy")
 require("dotenv").config()
+require("solidity-coverage")
 
 const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL
 const GOERLI_PRIVATE_KEY = process.env.GOERLI_PRIVATE_KEY
