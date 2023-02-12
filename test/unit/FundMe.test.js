@@ -19,7 +19,7 @@ describe("FundMe", function () {
 
     describe("constructor", function () {
         it("sets the aggregator addresses correctly", async function () {
-            const response = await fundMe.priceFeed()
+            const response = await fundMe.s_priceFeed()
             assert.equal(response, mockV3Aggregator.address)
         })
 
@@ -36,13 +36,13 @@ describe("FundMe", function () {
 
         it("should update amount funded data structure", async function () {
             await fundMe.fund({ value: sendValue }) // funding contract
-            const response = await fundMe.addressToAmount(deployer)
+            const response = await fundMe.s_addressToAmount(deployer)
             assert.equal(response.toString(), sendValue.toString())
         })
 
         it("add funders to array of funders", async function () {
             await fundMe.fund({ value: sendValue })
-            const funderAddress = await fundMe.funders(0)
+            const funderAddress = await fundMe.s_funders(0)
             assert.equal(funderAddress, deployer)
         })
     })
@@ -120,12 +120,12 @@ describe("FundMe", function () {
                 endingDeployerBalance.add(gasCost).toString()
             )
 
-            await expect(fundMe.funders(0)).to.be.reverted // checking if the funders array is resetted after withdrawing amount
+            await expect(fundMe.s_funders(0)).to.be.reverted // checking if the funders array is resetted after withdrawing amount
 
             // checking if all funded address is mapping to 0 after withdrawal
             for (let i = 0; i <= 5; i++) {
                 assert.equal(
-                    await fundMe.addressToAmount(accounts[i].address),
+                    await fundMe.s_addressToAmount(accounts[i].address),
                     0
                 )
             }

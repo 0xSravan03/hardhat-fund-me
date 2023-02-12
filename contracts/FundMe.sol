@@ -23,11 +23,11 @@ contract FundMe {
 
     address payable public immutable i_owner;
 
-    AggregatorV3Interface public priceFeed;
+    AggregatorV3Interface public s_priceFeed;
 
-    address[] public funders; // holds address of account who calls fund function.
+    address[] public s_funders; // holds address of account who calls fund function.
 
-    mapping(address => uint256) public addressToAmount;
+    mapping(address => uint256) public s_addressToAmount;
 
     // only owner modifier
     modifier onlyOwner() {
@@ -40,7 +40,7 @@ contract FundMe {
 
     constructor(address priceFeedAddress) {
         i_owner = payable(msg.sender); // setting owner of the contract.
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
+        s_priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
     // these functions catch the eth which is sent not using fund function and redirect to fund function
@@ -57,12 +57,12 @@ contract FundMe {
      */
     function fund() public payable {
         //require(msg.value.getConversionRate() >= MINIMUM_USD, "not enough money");
-        if (msg.value.getConversionRate(priceFeed) < MINIMUM_USD) {
+        if (msg.value.getConversionRate(s_priceFeed) < MINIMUM_USD) {
             revert FundMe__NotEnoughMoneySent();
         }
 
-        funders.push(msg.sender);
-        addressToAmount[msg.sender] += msg.value; // mapping address to amount sent.
+        s_funders.push(msg.sender);
+        s_addressToAmount[msg.sender] += msg.value; // mapping address to amount sent.
     }
 
     /**
@@ -70,12 +70,31 @@ contract FundMe {
      */
     function withdraw() public onlyOwner {
         // resetting map
+
+        /*
+        This function cost more gas because everytime loop runs it read s_funders value,
+        which is a storage variable. Read from storage required more gas. 
+        */
+
+        // for (uint256 i = 0; i < s_funders.length; i++) {
+        //     s_addressToAmount[s_funders[i]] = 0;
+        // }
+
+        /*
+        Here we are storing s_funders storage variable to a memory variable so that reading
+        from storage is no longer required.
+        below when for loop runs it take address from memory funders and reset mapping.
+        Read from memory required less gas.
+        note: Mapping can't be in memory
+         */
+        address[] memory funders = s_funders;
+
         for (uint256 i = 0; i < funders.length; i++) {
-            addressToAmount[funders[i]] = 0;
+            s_addressToAmount[funders[i]] = 0;
         }
 
         // resetting array
-        funders = new address[](0);
+        s_funders = new address[](0);
 
         // withdraw fund
         (bool callSuccess, ) = i_owner.call{value: address(this).balance}("");
