@@ -19,12 +19,12 @@ describe("FundMe", function () {
 
     describe("constructor", function () {
         it("sets the aggregator addresses correctly", async function () {
-            const response = await fundMe.s_priceFeed()
+            const response = await fundMe.getPriceFeed()
             assert.equal(response, mockV3Aggregator.address)
         })
 
         it("deployer and owner address must be same", async function () {
-            const owner = await fundMe.i_owner()
+            const owner = await fundMe.getOwner()
             assert.equal(deployer, owner)
         })
     })
@@ -36,13 +36,13 @@ describe("FundMe", function () {
 
         it("should update amount funded data structure", async function () {
             await fundMe.fund({ value: sendValue }) // funding contract
-            const response = await fundMe.s_addressToAmount(deployer)
+            const response = await fundMe.getAddressToAmountFunded(deployer)
             assert.equal(response.toString(), sendValue.toString())
         })
 
         it("add funders to array of funders", async function () {
             await fundMe.fund({ value: sendValue })
-            const funderAddress = await fundMe.s_funders(0)
+            const funderAddress = await fundMe.getFunder(0)
             assert.equal(funderAddress, deployer)
         })
     })
@@ -120,12 +120,12 @@ describe("FundMe", function () {
                 endingDeployerBalance.add(gasCost).toString()
             )
 
-            await expect(fundMe.s_funders(0)).to.be.reverted // checking if the funders array is resetted after withdrawing amount
+            await expect(fundMe.getFunder(0)).to.be.reverted // checking if the funders array is resetted after withdrawing amount
 
             // checking if all funded address is mapping to 0 after withdrawal
             for (let i = 0; i <= 5; i++) {
                 assert.equal(
-                    await fundMe.s_addressToAmount(accounts[i].address),
+                    await fundMe.getAddressToAmountFunded(accounts[i].address),
                     0
                 )
             }

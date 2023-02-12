@@ -21,13 +21,13 @@ contract FundMe {
     // State Variables
     uint256 public constant MINIMUM_USD = 50 * 1e18;
 
-    address payable public immutable i_owner;
+    address payable private immutable i_owner;
 
-    AggregatorV3Interface public s_priceFeed;
+    AggregatorV3Interface private s_priceFeed;
 
-    address[] public s_funders; // holds address of account who calls fund function.
+    address[] private s_funders; // holds address of account who calls fund function.
 
-    mapping(address => uint256) public s_addressToAmount;
+    mapping(address => uint256) private s_addressToAmount;
 
     // only owner modifier
     modifier onlyOwner() {
@@ -102,5 +102,24 @@ contract FundMe {
         if (!callSuccess) {
             revert FundMe__TransferFailed();
         }
+    }
+
+    // These functions won't cost any gas because they are not modifying the state of the blockchain.
+    function getOwner() public view returns (address) {
+        return i_owner;
+    }
+
+    function getFunder(uint256 index) public view returns (address) {
+        return s_funders[index];
+    }
+
+    function getAddressToAmountFunded(
+        address funder
+    ) public view returns (uint256) {
+        return s_addressToAmount[funder];
+    }
+
+    function getPriceFeed() public view returns (AggregatorV3Interface) {
+        return s_priceFeed;
     }
 }
