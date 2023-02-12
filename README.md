@@ -11,6 +11,14 @@
 - [Nodejs](https://nodejs.org/en/)
 - [yarn](https://yarnpkg.com/getting-started/install) or `npm`
 
+## Quickstart
+
+```
+git clone https://github.com/sravantp03/hardhat-fund-me
+cd hardhat-fund-me
+yarn
+```
+
 # Usage
 
 Deploy:
