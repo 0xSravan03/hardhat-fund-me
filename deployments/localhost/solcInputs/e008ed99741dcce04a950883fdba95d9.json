@@ -1,0 +1,41 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  function getRoundData(uint80 _roundId)\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n\n  function latestRoundData()\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n}\n"
+    },
+    "contracts/FundMe.sol": {
+      "content": "//SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.7;\n\nimport \"./PriceConverter.sol\"; // Library\n\n// custom errors\nerror FundMe__NotOwner();\nerror FundMe__NotEnoughMoneySent();\nerror FundMe__TransferFailed();\n\n/**\n * @title Contract for Crowd Funding\n * @author Sravan\n * @notice This is a sample crowd funding contract\n * @dev This impements price feeds as library\n */\ncontract FundMe {\n    using PriceConverter for uint256; // using library.(Type declarations)\n\n    // State Variables\n    uint256 public constant MINIMUM_USD = 50 * 1e18;\n\n    address payable private immutable i_owner;\n\n    AggregatorV3Interface private s_priceFeed;\n\n    address[] private s_funders; // holds address of account who calls fund function.\n\n    mapping(address => uint256) private s_addressToAmount;\n\n    // only owner modifier\n    modifier onlyOwner() {\n        //require(msg.sender == i_owner, \"Not Owner\");\n        if (msg.sender != i_owner) {\n            revert FundMe__NotOwner();\n        }\n        _;\n    }\n\n    constructor(address priceFeedAddress) {\n        i_owner = payable(msg.sender); // setting owner of the contract.\n        s_priceFeed = AggregatorV3Interface(priceFeedAddress);\n    }\n\n    // these functions catch the eth which is sent not using fund function and redirect to fund function\n    receive() external payable {\n        fund();\n    }\n\n    fallback() external payable {\n        fund();\n    }\n\n    /**\n     * @notice This function funds this contract\n     */\n    function fund() public payable {\n        //require(msg.value.getConversionRate() >= MINIMUM_USD, \"not enough money\");\n        if (msg.value.getConversionRate(s_priceFeed) < MINIMUM_USD) {\n            revert FundMe__NotEnoughMoneySent();\n        }\n\n        s_funders.push(msg.sender);\n        s_addressToAmount[msg.sender] += msg.value; // mapping address to amount sent.\n    }\n\n    /**\n     * @notice This function allow owner of the contract to withdraw funds\n     */\n    function withdraw() public onlyOwner {\n        // resetting map\n\n        /*\n        This function cost more gas because everytime loop runs it read s_funders value,\n        which is a storage variable. Read from storage required more gas. \n        */\n\n        // for (uint256 i = 0; i < s_funders.length; i++) {\n        //     s_addressToAmount[s_funders[i]] = 0;\n        // }\n\n        /*\n        Here we are storing s_funders storage variable to a memory variable so that reading\n        from storage is no longer required.\n        below when for loop runs it take address from memory funders and reset mapping.\n        Read from memory required less gas.\n        note: Mapping can't be in memory\n         */\n        address[] memory funders = s_funders;\n\n        for (uint256 i = 0; i < funders.length; i++) {\n            s_addressToAmount[funders[i]] = 0;\n        }\n\n        // resetting array\n        s_funders = new address[](0);\n\n        // withdraw fund\n        (bool callSuccess, ) = i_owner.call{value: address(this).balance}(\"\");\n        //require(callSuccess, \"Failed\");\n        if (!callSuccess) {\n            revert FundMe__TransferFailed();\n        }\n    }\n\n    // These functions won't cost any gas because they are not modifying the state of the blockchain.\n    function getOwner() public view returns (address) {\n        return i_owner;\n    }\n\n    function getFunder(uint256 index) public view returns (address) {\n        return s_funders[index];\n    }\n\n    function getAddressToAmountFunded(\n        address funder\n    ) public view returns (uint256) {\n        return s_addressToAmount[funder];\n    }\n\n    function getPriceFeed() public view returns (AggregatorV3Interface) {\n        return s_priceFeed;\n    }\n}\n"
+    },
+    "contracts/PriceConverter.sol": {
+      "content": "//SPDX-License-Identifier: MIT\r\n\r\npragma solidity ^0.8.7;\r\n\r\nimport \"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\";\r\n\r\nlibrary PriceConverter {\r\n    // get price of ETH in terms of USD\r\n    function getPrice(\r\n        AggregatorV3Interface priceFeed\r\n    ) internal view returns (uint256) {\r\n        (, int256 price, , , ) = priceFeed.latestRoundData(); // Current ETH price in USD\r\n        return uint256(price * 1e10);\r\n    }\r\n\r\n    function getConversionRate(\r\n        uint256 ethAmount,\r\n        AggregatorV3Interface priceFeed\r\n    ) internal view returns (uint256) {\r\n        return ((ethAmount * getPrice(priceFeed)) / 1e18); // return ethAmount in usd\r\n    }\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
